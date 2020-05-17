@@ -5,7 +5,7 @@
 
 class Orderbook():
     def __init__(self):
-        self._order_history = []
+        self.order_history = []
         self._bid_book = {}
         self._bid_book_prices = []
         self._ask_book = {}
@@ -13,13 +13,51 @@ class Orderbook():
         self.traded = False
 
     def add_order_to_history(self, order):
-
+       '''Add order to order_history'''
+        hist_order = {
+                'order_id': order['order_id'],
+                'timestamp': order['timestamp'],
+                'type': order['type'],
+                'quantity': order['quantity'],
+                'side' = order['side']
+                'price' = order['price']
+                }
+        self._order_index += 1
+        hist_order['exid'] = self.order_index
+        self.order_history.append(hist_order)
+        
     def add_order_to_book(self, order):
+        '''Use insort to maintain ordered list of prices, which are pointers to orders'''
+        book_order = {
+                'order_id': order['order_id'],
+                'timestamp': order['timestamp'],
+                'type': order['type'],
+                'quantity': order['quantity'],
+                'side': order['side'],
+                'price': order['price']
+                }
+        if order['side'] == 'buy':
+            book_prices = self._bid_book_prices
+            book = self._bid_book
+        else:
+            book_prices = self._ask_book_prices
+            book = self._ask_book
+        if order['price'] in book_prices:
+            book[order['price']]['num_orders'] += 1
+            book[order['price']]['size'] += order['quantity']
+            book[order['price']]['order_ids'].append(order['order_id'])
+            book[order['price']]['orders'][order['order_id']] = book_order
+        else:
+            bisect.insort(book_prices, order['price'])
+            book[order['price']] = {
+                    'num_orders': 1,
+                    'size': order['quantity'],
+                    'order_ids': [order['order_id']],
+                    'orders': {order['order_id']: book_order}
+                    }
 
     def _remove_order(self, order_side, order_price, order_id):
-        '''
-        If order exists, remove from book
-        '''
+        '''If order exists, remove from book'''
         if order_side == 'buy':
             book_prices = self._bid_book_prices
             book = self._bid_book
@@ -36,9 +74,7 @@ class Orderbook():
                 book_prices.remove(order_price)
 
     def _modify_order(self, order_size, order_quantity, order_id, order_price):
-        '''
-        If order_quantity = 0, remove order
-        '''
+        '''If order_quantity = 0, remove order'''
         book = self._bid_book if order_side == 'buy' else self._ask_book
 
         if order_quantity < book[order_price]['orders'][order_id]['quantity']:
@@ -49,7 +85,18 @@ class Orderbook():
 
 
     def add_trade_to_book(self): # Need to add more here
-
+        '''Add trade to the trade_book list.'''
+        self.trade_book.append(
+                {
+                    'resting_order_id': resting_order_id,
+                    'resting_timestamp': resting_timestamp,
+                    'incoming_order_id': incoming_order_id,
+                    'timestamp': timestamp,
+                    'price': price,
+                    'quantity': quantity,
+                    'side': side
+                    }
+                )
     def confirm_trade(self, timestamp, order_side, order_quantity, order_id, order_price):
 
     def confirm_modify(self, timestamp, order_side, order_quantity, order_id):
