@@ -100,6 +100,36 @@ class Orderbook():
     def confirm_modify(self, timestamp, order_side, order_quantity, order_id):
 
     def process_order(self, order): #this will do most of the work
+        '''Check if match with ersting order, if so call match_trade. Else update the book'''
+        self.confirm_modify_collector.clear()
+        self.traded = False
+        self.add_order_to_history(order)
+
+        if order['type'] == 'add':
+            if order['side'] == 'buy':
+                if order['price'] >= self.ask_book_prices[0]:
+                    self.match_trade(order)
+                else:
+                    self.add_order_to_book(order)
+            else: #order = sell
+                if order['price'] <= self.bid_book_prices[-1]:
+                    self.match_trade(order)
+                else:
+                    self.add_order_to_book(order)
+        else:
+            if order['side'] == 'buy':
+                book = self.bid_book
+                book_prices = self.bid_book_prices
+            else:
+                book = self.ask_book
+                book_prices = self.ask_book_prices
+            if order['price'] in book_prices:
+                if order['order_id' in book[order['price']]['orders']:
+                    self.confirm_modify(order['timestamp'], order['side'], order['quantity'], order['order_id'])
+                    if order['type'] == 'cancel':
+                        self.remove_order(order['side'], order['price'], order['order_id'])
+                    else: #type == modify
+                        self.modify_order(order['side'], order['quantity'], order['order_id'], order['price'])
 
     def match_trade(self, order):
         ''' 
