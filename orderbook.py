@@ -8,6 +8,10 @@ class Orderbook():
         self.bid_book_prices = []
         self.ask_book = {}
         self.ask_book_prices = []
+        self.confirm_modify_collector = []
+        self.confirm_trade_collector = []
+        self.trade_book = []
+        self.order_index = 0
         self.traded = False
 
     def add_order_to_history(self, order):
