@@ -1,7 +1,5 @@
 #TODO:
-# add_order_to_book
-# add_trade_to_book
-# confirm_trade
+# process order function
 
 class Orderbook():
     def __init__(self):
@@ -84,7 +82,7 @@ class Orderbook():
             self._remove_order(order_size, order_price, order_id)
 
 
-    def add_trade_to_book(self): # Need to add more here
+    def add_trade_to_book(self, resting_order_id, resting_timestamp, incoming_order_id, timestamp, price, quantity, side):
         '''Add trade to the trade_book list.'''
         self.trade_book.append(
                 {
