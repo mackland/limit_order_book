@@ -1,13 +1,13 @@
 #TODO:
 # process order function
-
+# make util function to get book, prices 
 class Orderbook():
     def __init__(self):
         self.order_history = []
-        self._bid_book = {}
-        self._bid_book_prices = []
-        self._ask_book = {}
-        self._ask_book_prices = []
+        self.bid_book = {}
+        self.bid_book_prices = []
+        self.ask_book = {}
+        self.ask_book_prices = []
         self.traded = False
 
     def add_order_to_history(self, order):
@@ -20,8 +20,8 @@ class Orderbook():
                 'side' = order['side']
                 'price' = order['price']
                 }
-        self._order_index += 1
-        hist_order['exid'] = self.order_index
+        self.order_index += 1
+        historder['exid'] = self.order_index
         self.order_history.append(hist_order)
         
     def add_order_to_book(self, order):
@@ -35,11 +35,11 @@ class Orderbook():
                 'price': order['price']
                 }
         if order['side'] == 'buy':
-            book_prices = self._bid_book_prices
-            book = self._bid_book
+            book_prices = self.bid_book_prices
+            book = self.bid_book
         else:
-            book_prices = self._ask_book_prices
-            book = self._ask_book
+            book_prices = self.ask_book_prices
+            book = self.ask_book
         if order['price'] in book_prices:
             book[order['price']]['num_orders'] += 1
             book[order['price']]['size'] += order['quantity']
@@ -54,14 +54,14 @@ class Orderbook():
                     'orders': {order['order_id']: book_order}
                     }
 
-    def _remove_order(self, order_side, order_price, order_id):
+    def remove_order(self, order_side, order_price, order_id):
         '''If order exists, remove from book'''
         if order_side == 'buy':
-            book_prices = self._bid_book_prices
-            book = self._bid_book
+            book_prices = self.bid_book_prices
+            book = self.bid_book
         else: # order_side == 'sell'
-            book_prices = self._ask_book_prices
-            book = self._ask_book
+            book_prices = self.ask_book_prices
+            book = self.ask_book
 
         is_order = book[order_price]['orders'].pop(order_id, None)
         if is_order:
@@ -71,15 +71,15 @@ class Orderbook():
             if book[order_price]['num_orders'] == 0:
                 book_prices.remove(order_price)
 
-    def _modify_order(self, order_size, order_quantity, order_id, order_price):
+    def modify_order(self, order_size, order_quantity, order_id, order_price):
         '''If order_quantity = 0, remove order'''
-        book = self._bid_book if order_side == 'buy' else self._ask_book
+        book = self.bid_book if order_side == 'buy' else self.ask_book
 
         if order_quantity < book[order_price]['orders'][order_id]['quantity']:
             book[order_price]['size'] -= order_quantity
             book[order_price]['orders'][order_id]['quantity'] -= order_quantity
         else:
-            self._remove_order(order_size, order_price, order_id)
+            self.remove_order(order_size, order_price, order_id)
 
 
     def add_trade_to_book(self, resting_order_id, resting_timestamp, incoming_order_id, timestamp, price, quantity, side):
@@ -101,15 +101,15 @@ class Orderbook():
 
     def process_order(self, order): #this will do most of the work
 
-    def _match_trade(self, order):
+    def match_trade(self, order):
         ''' 
         Match order with resting orders on the book, once matched will remove resting order or modify by number of shares of the incoming order
         '''
         self.traded = True
          
         if order['side'] == 'buy':
-            book_prices = self._ask_book_prices
-            book = self._ask_book
+            book_prices = self.ask_book_prices
+            book = self.ask_book
             remainder = order['quantity']
 
             while remainder > 0:
@@ -123,14 +123,14 @@ class Orderbook():
                                     book_order['order_id'], book_order['price'])
                             self.add_trade_to_book(book_order['order_id'], book_order['timestamp'], order['order_id'], 
                                     order['timestamp'], book_order['price'], book_order['quantity'], order['side'])
-                            self._remove_order(book_order['side'], book_order['price'], book_order['order_id'])
+                            self.remove_order(book_order['side'], book_order['price'], book_order['order_id'])
                             remainder -= book_order['quantity']
                         else: # trade will take place but will only reduce the resting order quantity by # of shares
                             self.confirm_trade(order['timestamp'], book_order['side'], remainder, 
                                     book_order['order_id'], book_order['price'])
                             self.add_trade_to_book(book_order['order_id'], book_order['timestamp'], order['order_id'], 
                                     order['timestamp'], book_order['price'], remainder, order['side'])
-                            self._modify_order(book_order['side'], remainder, book_order['order_id'], book_order['price'])
+                            self.modify_order(book_order['side'], remainder, book_order['order_id'], book_order['price'])
                             break
                     else: #no immediate match, add order to book
                         order['quantity'] = remainder
@@ -140,8 +140,8 @@ class Orderbook():
                     print('No orders on book after order {0}'.format(order))
                     break
         else: #order['side'] == 'sell'
-            book_prices = self._bid_book_prices
-            book = self._bid_book
+            book_prices = self.bid_book_prices
+            book = self.bid_book
             remainder = order['quantity']
             while remainder > 0:
                 if book_prices:
@@ -154,13 +154,13 @@ class Orderbook():
                                     book_order['order_id'], book_order['price'])
                             self.add_trade_to_book(book_order['order_id'], book_order['timestamp'], order['order_id'], 
                                     order['timestamp'], book_order['price'], book_order['quantity'], order['side'])
-                            self._remove_order(book_order['side'], book_order['price'], book_order['order_id'])
+                            self.remove_order(book_order['side'], book_order['price'], book_order['order_id'])
                             remainder -= book_order['quantity']
                         else: # trade will take place but will only reduce the resting order quantity by # of shares
                             self.confirm_trade(order['timestamp'], book_order['side'], remainder, book_order['order_id'], book_order['price'])
                             self.add_trade_to_book(book_order['order_id'], book_order['timestamp'], order['order_id'], 
                                     order['timestamp'], book_order['price'], remainder, order['side'])
-                            self._modify_order(book_order['side'], remainder, book_order['order_id'], book_order['price'])
+                            self.modify_order(book_order['side'], remainder, book_order['order_id'], book_order['price'])
                             break
  
                     else:
