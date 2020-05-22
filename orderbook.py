@@ -38,12 +38,13 @@ class Orderbook():
                 'side': order['side'],
                 'price': order['price']
                 }
-        if order['side'] == 'buy':
-            book_prices = self.bid_book_prices
-            book = self.bid_book
-        else:
-            book_prices = self.ask_book_prices
-            book = self.ask_book
+        book, book_prices = self._get_book(order['side'])
+        #if order['side'] == 'buy':
+        #    book_prices = self.bid_book_prices
+        #    book = self.bid_book
+        #else:
+        #    book_prices = self.ask_book_prices
+        #    book = self.ask_book
         if order['price'] in book_prices:
             book[order['price']]['num_orders'] += 1
             book[order['price']]['size'] += order['quantity']
@@ -60,12 +61,13 @@ class Orderbook():
 
     def remove_order(self, order_side, order_price, order_id):
         '''If order exists, remove from book'''
-        if order_side == 'buy':
-            book_prices = self.bid_book_prices
-            book = self.bid_book
-        else: # order_side == 'sell'
-            book_prices = self.ask_book_prices
-            book = self.ask_book
+        book, book_prices = self._get_book(order_side)
+        #if order_side == 'buy':
+        #    book_prices = self.bid_book_prices
+        #    book = self.bid_book
+        #else: # order_side == 'sell'
+        #    book_prices = self.ask_book_prices
+        #    book = self.ask_book
 
         is_order = book[order_price]['orders'].pop(order_id, None)
         if is_order:
@@ -75,15 +77,16 @@ class Orderbook():
             if book[order_price]['num_orders'] == 0:
                 book_prices.remove(order_price)
 
-    def modify_order(self, order_size, order_quantity, order_id, order_price):
+    def modify_order(self, order_side, order_quantity, order_id, order_price):
         '''If order_quantity = 0, remove order'''
-        book = self.bid_book if order_side == 'buy' else self.ask_book
-
+        book,_ = self._get_book(order_side)
+        #book = self.bid_book if order_side == 'buy' else self.ask_book
+        
         if order_quantity < book[order_price]['orders'][order_id]['quantity']:
             book[order_price]['size'] -= order_quantity
             book[order_price]['orders'][order_id]['quantity'] -= order_quantity
         else:
-            self.remove_order(order_size, order_price, order_id)
+            self.remove_order(order_side, order_price, order_id)
 
 
     def add_trade_to_book(self, resting_order_id, resting_timestamp, incoming_order_id, timestamp, price, quantity, side):
@@ -121,12 +124,14 @@ class Orderbook():
                 else:
                     self.add_order_to_book(order)
         else:
-            if order['side'] == 'buy':
-                book = self.bid_book
-                book_prices = self.bid_book_prices
-            else:
-                book = self.ask_book
-                book_prices = self.ask_book_prices
+            book, book_prices = self._get_book(order['side'])
+            
+            #if order['side'] == 'buy':
+            #    book = self.bid_book
+            #    book_prices = self.bid_book_prices
+            #else:
+            #    book = self.ask_book
+            #    book_prices = self.ask_book_prices
             if order['price'] in book_prices:
                 if order['order_id' in book[order['price']]['orders']:
                     self.confirm_modify(order['timestamp'], order['side'], order['quantity'], order['order_id'])
@@ -140,10 +145,11 @@ class Orderbook():
         Match order with resting orders on the book, once matched will remove resting order or modify by number of shares of the incoming order
         '''
         self.traded = True
-         
+        book, book_prices = self._get_book(order['side') 
+        
         if order['side'] == 'buy':
-            book_prices = self.ask_book_prices
-            book = self.ask_book
+            #book_prices = self.ask_book_prices
+            #book = self.ask_book
             remainder = order['quantity']
 
             while remainder > 0:
@@ -174,8 +180,8 @@ class Orderbook():
                     print('No orders on book after order {0}'.format(order))
                     break
         else: #order['side'] == 'sell'
-            book_prices = self.bid_book_prices
-            book = self.bid_book
+            #book_prices = self.bid_book_prices
+            #book = self.bid_book
             remainder = order['quantity']
             while remainder > 0:
                 if book_prices:
@@ -205,3 +211,8 @@ class Orderbook():
                     print('No orders on bid book with order {0}'.format(order))
                     break
 
+    def _get_book(self, side):
+        if side == 'buy':
+            return self.ask_book, self.ask_book_prices
+        else:
+            return self.bid_book, self.bid_book_prices
