@@ -1,6 +1,8 @@
 #TODO:
 # process order function
 # make util function to get book, prices 
+import bisect
+
 class Orderbook():
     def __init__(self):
         self.order_history = []
@@ -15,17 +17,17 @@ class Orderbook():
         self.traded = False
 
     def add_order_to_history(self, order):
-       '''Add order to order_history'''
+        '''Add order to order_history'''
         hist_order = {
                 'order_id': order['order_id'],
                 'timestamp': order['timestamp'],
                 'type': order['type'],
                 'quantity': order['quantity'],
-                'side' = order['side']
-                'price' = order['price']
+                'side': order['side'],
+                'price': order['price']
                 }
         self.order_index += 1
-        historder['exid'] = self.order_index
+        hist_order['exid'] = self.order_index
         self.order_history.append(hist_order)
         
     def add_order_to_book(self, order):
@@ -38,13 +40,13 @@ class Orderbook():
                 'side': order['side'],
                 'price': order['price']
                 }
-        book, book_prices = self._get_book(order['side'])
-        #if order['side'] == 'buy':
-        #    book_prices = self.bid_book_prices
-        #    book = self.bid_book
-        #else:
-        #    book_prices = self.ask_book_prices
-        #    book = self.ask_book
+        
+        if order['side'] == 'buy':
+            book_prices = self.bid_book_prices
+            book = self.bid_book
+        else:
+            book_prices = self.ask_book_prices
+            book = self.ask_book
         if order['price'] in book_prices:
             book[order['price']]['num_orders'] += 1
             book[order['price']]['size'] += order['quantity']
@@ -52,6 +54,7 @@ class Orderbook():
             book[order['price']]['orders'][order['order_id']] = book_order
         else:
             bisect.insort(book_prices, order['price'])
+            print('adding order %s to book' % order)
             book[order['price']] = {
                     'num_orders': 1,
                     'size': order['quantity'],
@@ -61,13 +64,12 @@ class Orderbook():
 
     def remove_order(self, order_side, order_price, order_id):
         '''If order exists, remove from book'''
-        book, book_prices = self._get_book(order_side)
-        #if order_side == 'buy':
-        #    book_prices = self.bid_book_prices
-        #    book = self.bid_book
-        #else: # order_side == 'sell'
-        #    book_prices = self.ask_book_prices
-        #    book = self.ask_book
+        if order_side == 'buy':
+            book_prices = self.bid_book_prices
+            book = self.bid_book
+        else: # order_side == 'sell'
+            book_prices = self.ask_book_prices
+            book = self.ask_book
 
         is_order = book[order_price]['orders'].pop(order_id, None)
         if is_order:
@@ -79,8 +81,7 @@ class Orderbook():
 
     def modify_order(self, order_side, order_quantity, order_id, order_price):
         '''If order_quantity = 0, remove order'''
-        book,_ = self._get_book(order_side)
-        #book = self.bid_book if order_side == 'buy' else self.ask_book
+        book = self.bid_book if order_side == 'buy' else self.ask_book
         
         if order_quantity < book[order_price]['orders'][order_id]['quantity']:
             book[order_price]['size'] -= order_quantity
@@ -103,8 +104,10 @@ class Orderbook():
                     }
                 )
     def confirm_trade(self, timestamp, order_side, order_quantity, order_id, order_price):
+        pass
 
     def confirm_modify(self, timestamp, order_side, order_quantity, order_id):
+        pass
 
     def process_order(self, order): #this will do most of the work
         '''Check if match with ersting order, if so call match_trade. Else update the book'''
@@ -124,16 +127,14 @@ class Orderbook():
                 else:
                     self.add_order_to_book(order)
         else:
-            book, book_prices = self._get_book(order['side'])
-            
-            #if order['side'] == 'buy':
-            #    book = self.bid_book
-            #    book_prices = self.bid_book_prices
-            #else:
-            #    book = self.ask_book
-            #    book_prices = self.ask_book_prices
+            if order['side'] == 'buy':
+                book = self.bid_book
+                book_prices = self.bid_book_prices
+            else:
+                book = self.ask_book
+                book_prices = self.ask_book_prices
             if order['price'] in book_prices:
-                if order['order_id' in book[order['price']]['orders']:
+                if order['order_id'] in book[order['price']]['orders']:
                     self.confirm_modify(order['timestamp'], order['side'], order['quantity'], order['order_id'])
                     if order['type'] == 'cancel':
                         self.remove_order(order['side'], order['price'], order['order_id'])
@@ -145,11 +146,10 @@ class Orderbook():
         Match order with resting orders on the book, once matched will remove resting order or modify by number of shares of the incoming order
         '''
         self.traded = True
-        book, book_prices = self._get_book(order['side') 
         
         if order['side'] == 'buy':
-            #book_prices = self.ask_book_prices
-            #book = self.ask_book
+            book_prices = self.ask_book_prices
+            book = self.ask_book
             remainder = order['quantity']
 
             while remainder > 0:
@@ -180,8 +180,8 @@ class Orderbook():
                     print('No orders on book after order {0}'.format(order))
                     break
         else: #order['side'] == 'sell'
-            #book_prices = self.bid_book_prices
-            #book = self.bid_book
+            book_prices = self.bid_book_prices
+            book = self.bid_book
             remainder = order['quantity']
             while remainder > 0:
                 if book_prices:
@@ -211,8 +211,3 @@ class Orderbook():
                     print('No orders on bid book with order {0}'.format(order))
                     break
 
-    def _get_book(self, side):
-        if side == 'buy':
-            return self.ask_book, self.ask_book_prices
-        else:
-            return self.bid_book, self.bid_book_prices
