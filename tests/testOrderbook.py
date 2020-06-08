@@ -121,6 +121,40 @@ class TestBook:
         assert self.test_book.ask_book[52]['size'] == 0
         assert len(self.test_book.ask_book[52]['order_ids']) == 0
         assert 't1_4' not in self.test_book.ask_book[52]['orders'].keys()
- 
+
+    def test_modify_order(self):
+        '''Add orders, remove partial then the remaining'''
+        
+        # Test bid book
+        self.test_book.add_order_to_book(self.buy_order_3)
+        assert self.test_book.bid_book[49]['size'] == 3
+        
+        self.test_book.modify_order('buy', 2, 't10_1', 49)
+        assert self.test_book.bid_book[49]['size'] == 1
+        assert self.test_book.bid_book[49]['orders']['t10_1']['quantity'] == 1
+        assert 49 in self.test_book.bid_book_prices
+
+        self.test_book.modify_order('buy', 1, 't10_1', 49)
+        assert len(self.test_book.bid_book_prices) == 0
+        assert self.test_book.bid_book[49]['num_orders'] == 0
+        assert self.test_book.bid_book[49]['size'] == 0
+        assert 49 not in self.test_book.bid_book_prices
+        assert 't10_1' not in self.test_book.bid_book[49]['orders'].keys()
+
+        # Test the ask book
+        self.test_book.add_order_to_book(self.sell_order_3)
+        assert self.test_book.ask_book[53]['size'] == 3
+
+        self.test_book.modify_order('sell', 2, 't10_2', 53)
+        assert self.test_book.ask_book[53]['size'] == 1
+        assert self.test_book.ask_book[53]['orders']['t10_2']['quantity'] == 1
+        assert 53 in self.test_book.ask_book_prices
+
+        self.test_book.modify_order('sell', 1, 't10_2', 53)
+        assert len(self.test_book.ask_book_prices) == 0
+        assert self.test_book.ask_book[53]['num_orders'] == 0
+        assert self.test_book.ask_book[53]['size'] == 0
+        assert 't10_2' not in self.test_book.ask_book[53]['orders'].keys()
+
     def test_two(self):
         assert 5 > 1
