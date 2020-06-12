@@ -1,8 +1,8 @@
 import pytest
 from project.orderbook import Orderbook
 
-@pytest.fixture
-def book(scope='function'):
+@pytest.fixture(scope='function')
+def book():
     book = Orderbook()
     
     yield book
