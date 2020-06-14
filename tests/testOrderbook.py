@@ -7,148 +7,140 @@ def book():
     
     yield book
 
-def test_add_order_to_history(book):
-    test_order = {'order_id':'test','timestamp':1,'type':'add','quantity':50,'side':'sell','price':140,'exid':1}
+@pytest.fixture(scope='function')
+def ask_order():
+    ask = Orderbook.Order(order_id='s_1', timestamp=1,order_type='add', quantity=200, side='sell', price=49) 
+    return ask
+
+@pytest.fixture(scope='function')
+def bid_order():
+    bid = Orderbook.Order(order_id='b_1', timestamp=1,order_type='add', quantity=200, side='buy', price=49) 
+    return bid
+
+def test_add_order_to_history(book, bid_order):
+    bid_order.exid = 1
     assert len(book.order_history) == 0
-    book.add_order_to_history(test_order)
-    assert test_order == book.order_history[0]
+    book.add_order_to_history(bid_order)
+    assert bid_order == book.order_history[0]
 
-@pytest.mark.parametrize(
-        'order_id,timestamp,types,quantity,side,price', 
-        [
-            ('t1_1','1','add',1,'buy',50),
-            ('t1_2','2','add',2,'buy',49),
-            ('t1_3','3','add',4,'sell',48),
-            ('t1_4','4','add',5,'sell',47),
-            ('t1_5','5','add',120,'buy',45), 
-            ('t1_6','6','add',500,'buy',127), 
-            ('t1_7','7','add',250,'sell',299), 
-            ]
-        )
-def test_add_order_to_book(book,order_id,timestamp,types,quantity,side,price):
+def test_add_order_to_book_bid(book, bid_order):
     assert len(book.bid_book_prices) == 0
-    assert len(book.ask_book_prices) == 0
     assert len(book.bid_book) == 0
-    assert len(book.ask_book) == 0
-
-    test_order = {'order_id':order_id,'timestamp':timestamp,'type':types,'quantity':quantity,'side':side,'price':price} 
-    book.add_order_to_book(test_order)
+    book.add_order_to_book(bid_order)
     
-    if side == 'buy':
-        assert price in book.bid_book_prices
-        assert price in book.bid_book.keys()
-        assert book.bid_book[price]['num_orders'] == 1
-        assert book.bid_book[price]['size'] == quantity
-        assert book.bid_book[price]['order_ids'][0] == order_id
-    else:
-        assert price in book.ask_book_prices
-        assert price in book.ask_book.keys()
-        assert book.ask_book[price]['num_orders'] == 1
-        assert book.ask_book[price]['size'] == quantity
-        assert book.ask_book[price]['order_ids'][0] == order_id
+    assert len(book.ask_book_prices) == 0
+    assert len(book.ask_book) == 0
+    assert bid_order.price in book.bid_book_prices
+    assert bid_order.price in book.bid_book.keys()
+    assert book.bid_book[bid_order.price]['num_orders'] == 1
+    assert book.bid_book[bid_order.price]['size'] == bid_order.quantity
+    assert book.bid_book[bid_order.price]['order_ids'][0] == bid_order.order_id
+ 
+def test_add_order_to_book_ask(book, ask_order):
+    assert len(book.ask_book_prices) == 0
+    assert len(book.ask_book) == 0
+    book.add_order_to_book(ask_order)
+   
+    assert len(book.bid_book_prices) == 0
+    assert len(book.bid_book) == 0
+    assert ask_order.price in book.ask_book_prices
+    assert ask_order.price in book.ask_book.keys()
+    assert book.ask_book[ask_order.price]['num_orders'] == 1
+    assert book.ask_book[ask_order.price]['size'] == ask_order.quantity
+    assert book.ask_book[ask_order.price]['order_ids'][0] == ask_order.order_id
 
-#def test_remove_order(self):
-#    self.test_book.add_order_to_book(self.buy_order_1)
-#    self.test_book.add_order_to_book(self.buy_order_2)
-#    assert 50 in self.test_book.bid_book_prices
-#    assert 50 in self.test_book.bid_book.keys()
-#    assert self.test_book.bid_book[50]['num_orders'] == 2
-#    assert self.test_book.bid_book[50]['size'] == 2
-#    assert len(self.test_book.bid_book[50]['order_ids']) == 2
-#
-#    #try remove order
-#    self.test_book.remove_order('buy', 50, 't1_1')
-#    assert self.test_book.bid_book[50]['num_orders'] == 1
-#    assert self.test_book.bid_book[50]['size'] == 1
-#    assert len(self.test_book.bid_book) == 1
-#    assert 't1_1' not in self.test_book.bid_book[50]['orders'].keys()
-#    assert 50 in self.test_book.bid_book_prices
-#
-#    #remove 2nd order
-#    self.test_book.remove_order('buy', 50, 't1_2')
-#    assert len(self.test_book.bid_book_prices) == 0
-#    assert self.test_book.bid_book[50]['num_orders'] == 0
-#    assert self.test_book.bid_book[50]['size'] == 0
-#    assert len(self.test_book.bid_book[50]['order_ids']) == 0
-#    assert 't1_2' not in self.test_book.bid_book[50]['orders'].keys()
-#    assert 50 not in self.test_book.bid_book_prices
-#
-#    #remove 2nd again
-#    self.test_book.remove_order('buy', 50, 't1_2')
-#    assert len(self.test_book.bid_book_prices) == 0
-#    assert self.test_book.bid_book[50]['num_orders'] == 0
-#    assert self.test_book.bid_book[50]['size'] == 0
-#    assert len(self.test_book.bid_book[50]['order_ids']) == 0
-#    assert 't1_2' not in self.test_book.bid_book[50]['orders'].keys()
-#    
-#    #test for ask book
-#    self.test_book.add_order_to_book(self.sell_order_1)
-#    self.test_book.add_order_to_book(self.sell_order_2)
-#    assert 52 in self.test_book.ask_book_prices
-#    assert 52 in self.test_book.ask_book.keys()
-#    assert self.test_book.ask_book[52]['num_orders'] == 2
-#    assert self.test_book.ask_book[52]['size'] == 2
-#    assert len(self.test_book.ask_book[52]['order_ids']) == 2
-#
-#    #remove sell_order_1
-#    self.test_book.remove_order('sell', 52, 't1_3')
-#    assert self.test_book.ask_book[52]['num_orders'] == 1
-#    assert self.test_book.ask_book[52]['size'] == 1
-#    assert len(self.test_book.ask_book[52]['order_ids']) == 1
-#    assert 't1_3' not in self.test_book.ask_book[52]['orders'].keys()
-#    assert 52 in self.test_book.ask_book_prices
-#
-#    #remove 2nd order
-#    self.test_book.remove_order('sell', 52, 't1_4')
-#    assert len(self.test_book.ask_book_prices) == 0
-#    assert self.test_book.ask_book[52]['num_orders'] == 0
-#    assert self.test_book.ask_book[52]['size'] == 0
-#    assert len(self.test_book.ask_book[52]['order_ids']) == 0
-#    assert 't1_4' not in self.test_book.ask_book[52]['orders'].keys()
-#    assert 52 not in self.test_book.ask_book_prices
-#
-#    #remove 2nd again
-#    self.test_book.remove_order('sell', 52, 't1_4')
-#    assert len(self.test_book.ask_book_prices) == 0
-#    assert self.test_book.ask_book[52]['num_orders'] == 0
-#    assert self.test_book.ask_book[52]['size'] == 0
-#    assert len(self.test_book.ask_book[52]['order_ids']) == 0
-#    assert 't1_4' not in self.test_book.ask_book[52]['orders'].keys()
-#
-#def test_modify_order(self):
-#    ''Add orders, remove partial then the remaining''
-#    
-#    # Test bid book
-#    self.test_book.add_order_to_book(self.buy_order_3)
-#    assert self.test_book.bid_book[49]['size'] == 3
-#    
-#    self.test_book.modify_order('buy', 2, 't10_1', 49)
-#    assert self.test_book.bid_book[49]['size'] == 1
-#    assert self.test_book.bid_book[49]['orders']['t10_1']['quantity'] == 1
-#    assert 49 in self.test_book.bid_book_prices
-#
-#    self.test_book.modify_order('buy', 1, 't10_1', 49)
-#    assert len(self.test_book.bid_book_prices) == 0
-#    assert self.test_book.bid_book[49]['num_orders'] == 0
-#    assert self.test_book.bid_book[49]['size'] == 0
-#    assert 49 not in self.test_book.bid_book_prices
-#    assert 't10_1' not in self.test_book.bid_book[49]['orders'].keys()
-#
-#    # Test the ask book
-#    self.test_book.add_order_to_book(self.sell_order_3)
-#    assert self.test_book.ask_book[53]['size'] == 3
-#
-#    self.test_book.modify_order('sell', 2, 't10_2', 53)
-#    assert self.test_book.ask_book[53]['size'] == 1
-#    assert self.test_book.ask_book[53]['orders']['t10_2']['quantity'] == 1
-#    assert 53 in self.test_book.ask_book_prices
-#
-#    self.test_book.modify_order('sell', 1, 't10_2', 53)
-#    assert len(self.test_book.ask_book_prices) == 0
-#    assert self.test_book.ask_book[53]['num_orders'] == 0
-#    assert self.test_book.ask_book[53]['size'] == 0
-#    assert 't10_2' not in self.test_book.ask_book[53]['orders'].keys()
-#
-#def test_two(self):
-#    assert 5 > 1
-#
+def test_remove_order_bid(book):
+    b_1 = Orderbook.Order(order_id='b_1', timestamp=1,order_type='add', quantity=200, side='buy', price=49) 
+    b_2 = Orderbook.Order(order_id='b_2', timestamp=1,order_type='add', quantity=200, side='buy', price=49) 
+    book.add_order_to_book(b_1)
+    book.add_order_to_book(b_2)
+    
+    assert len(book.bid_book[49]['order_ids']) == 2
+
+    #try remove order
+    book.remove_order('buy', 49, 'b_1')
+    assert book.bid_book[49]['num_orders'] == 1
+    assert book.bid_book[49]['size'] == 200
+    assert len(book.bid_book[49]['order_ids']) == 1
+    assert 'b_1' not in book.bid_book[49]['orders'].keys()
+    assert 49 in book.bid_book_prices
+
+    #remove 2nd order
+    book.remove_order('buy', 49, 'b_2')
+    assert len(book.bid_book_prices) == 0
+    assert book.bid_book[49]['num_orders'] == 0
+    assert book.bid_book[49]['size'] == 0
+    assert len(book.bid_book[49]['order_ids']) == 0
+    assert 'b_2' not in book.bid_book[49]['orders'].keys()
+    assert 49 not in book.bid_book_prices
+
+    #remove 2nd again
+    book.remove_order('buy', 49, 'b_2')
+    assert len(book.bid_book_prices) == 0
+    assert book.bid_book[49]['num_orders'] == 0
+    assert book.bid_book[49]['size'] == 0
+    assert len(book.bid_book[49]['order_ids']) == 0
+    assert 'b_2' not in book.bid_book[49]['orders'].keys()
+
+def test_remove_order_ask(book):
+    s_1 = Orderbook.Order(order_id='s_1', timestamp=1,order_type='add', quantity=200, side='sell', price=52) 
+    s_2 = Orderbook.Order(order_id='s_2', timestamp=1,order_type='add', quantity=200, side='sell', price=52) 
+    book.add_order_to_book(s_1)
+    book.add_order_to_book(s_2)
+    
+    assert len(book.ask_book[52]['order_ids']) == 2
+
+    #remove sell_order_1
+    book.remove_order('sell', 52, 's_1')
+    assert book.ask_book[52]['num_orders'] == 1
+    assert book.ask_book[52]['size'] == 200
+    assert len(book.ask_book[52]['order_ids']) == 1
+    assert 's_1' not in book.ask_book[52]['orders'].keys()
+    assert 52 in book.ask_book_prices
+
+    #remove 2nd order
+    book.remove_order('sell', 52, 's_2')
+    assert len(book.ask_book_prices) == 0
+    assert book.ask_book[52]['num_orders'] == 0
+    assert book.ask_book[52]['size'] == 0
+    assert len(book.ask_book[52]['order_ids']) == 0
+    assert 's_2' not in book.ask_book[52]['orders'].keys()
+    assert 52 not in book.ask_book_prices
+
+    #remove 2nd again
+    book.remove_order('sell', 52, 's_2')
+    assert len(book.ask_book_prices) == 0
+    assert book.ask_book[52]['num_orders'] == 0
+    assert book.ask_book[52]['size'] == 0
+    assert len(book.ask_book[52]['order_ids']) == 0
+    assert 's_2' not in book.ask_book[52]['orders'].keys()
+
+def test_modify_order_bid(book, bid_order):
+    '''Add orders, remove partial then the remaining''' 
+    book.add_order_to_book(bid_order)
+    
+    book.modify_order('buy', 100, 'b_1', 49)
+    assert book.bid_book[49]['size'] == 100
+    assert book.bid_book[49]['orders']['b_1'].quantity == 100
+    assert 49 in book.bid_book_prices
+
+    book.modify_order('buy', 100, 'b_1', 49)
+    assert len(book.bid_book_prices) == 0
+    assert book.bid_book[49]['num_orders'] == 0
+    assert book.bid_book[49]['size'] == 0
+    assert 49 not in book.bid_book_prices
+    assert 'b_1' not in book.bid_book[49]['orders'].keys()
+
+def test_modify_order_ask(book, ask_order):
+    book.add_order_to_book(ask_order)
+
+    book.modify_order('sell', 100, 's_1', 49)
+    assert book.ask_book[49]['size'] == 100
+    assert book.ask_book[49]['orders']['s_1'].quantity == 100
+    assert 49 in book.ask_book_prices
+
+    book.modify_order('sell', 100, 's_1', 49)
+    assert len(book.ask_book_prices) == 0
+    assert book.ask_book[49]['num_orders'] == 0
+    assert book.ask_book[49]['size'] == 0
+    assert 's_1' not in book.ask_book[49]['orders'].keys()
