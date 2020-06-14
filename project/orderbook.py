@@ -38,14 +38,7 @@ class Orderbook():
     def add_order_to_history(self, order):
         '''Add order to order_history'''
         hist_order = copy.deepcopy(order)
-#        {
-#                'order_id': order['order_id'],
-#                'timestamp': order['timestamp'],
-#                'type': order['type'],
-#                'quantity': order['quantity'],
-#                'side': order['side'],
-#                'price': order['price']
-#                }
+        
         self.order_index += 1
         hist_order.exid = self.order_index
         self.order_history.append(hist_order)
@@ -53,14 +46,6 @@ class Orderbook():
     def add_order_to_book(self, order):
         '''Use insort to maintain ordered list of prices, which are pointers to orders'''
         book_order = copy.deepcopy(order)
-#        {
-#                'order_id': order['order_id'],
-#                'timestamp': order['timestamp'],
-#                'type': order['type'],
-#                'quantity': order['quantity'],
-#                'side': order['side'],
-#                'price': order['price']
-#                }
         
         if order.side == 'buy':
             book_prices = self.bid_book_prices
@@ -124,10 +109,12 @@ class Orderbook():
                     }
                 )
     def confirm_trade(self, timestamp, order_side, order_quantity, order_id, order_price):
-        pass
+        trader = order_id.partition('_')[0] 
+        self.confirm_trade_collector.append({'timestamp':timestamp,'order_id':order_id,'side':order_side,'quantity':order_quantity,'price':order_price,'trader':trader})
 
     def confirm_modify(self, timestamp, order_side, order_quantity, order_id):
-        pass
+        trader = order_id.partition('_')[0]
+        self.confirm_trade_collector.append({'timestamp':timestamp,'order_id':order_id,'side':order_side,'quantity':order_quantity,'price':order_price,'trader':trader})
 
     def process_order(self, order): #this will do most of the work
         '''Check if match with ersting order, if so call match_trade. Else update the book'''
