@@ -35,6 +35,7 @@ class Orderbook():
         self.order_index = 0
         self.traded = False
 
+
     def add_order_to_history(self, order):
         '''Add order to order_history'''
         hist_order = copy.deepcopy(order)
